@@ -1,0 +1,41 @@
+SoluMove Solar 0.2.0 — vérification du 8 octobre 2026
+TypeScript: PASS
+Vinext Worker build: PASS
+PASS: financial rounding, installment conservation, month-end dates, payroll checks, cheque ceilings, sample records and 3-language module coverage.
+
+PASS: progressive tax, month prorata/unpaid leave/overtime/commissions, contribution snapshots, leave accrual, project margin, solar sizing, CSV quoting and bank paper bounds.
+
+
+solar request failure D1_ERROR: overpayment: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_TRIGGER)
+solar request failure D1_ERROR: insufficient_available_stock: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_TRIGGER)
+solar request failure conflict
+solar request failure unauthorized
+solar request failure schedule_exists
+solar request failure D1_ERROR: insufficient_available_stock: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_TRIGGER)
+solar request failure D1_ERROR: serial_location: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_TRIGGER)
+solar request failure vehicle_overlap
+solar request failure conflict
+PASS: built Worker/API authentication, isolation, settlements, rollback/reversal, atomic/idempotent transfers, reservations, serial transfers, invoice conversion, branch-linked schedule conservation, vehicle overlap/odometer, stale edits and server-rendered app shell.
+
+solar request failure already_posted
+solar request failure overreceipt
+solar request failure invalid_status
+solar request failure unbalanced_entry
+solar request failure use_business_action
+solar request failure idempotency_conflict
+solar request failure payroll_policy_required
+solar request failure leave_overlap
+solar request failure forbidden
+solar request failure use_signature_action
+solar request failure invalid_print_profile
+solar request failure D1_ERROR: period_closed: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_TRIGGER)
+solar request failure overpayment
+solar request failure forbidden
+solar request failure forbidden_branch
+solar request failure conflict
+solar request failure backup_checksum_mismatch
+solar request failure restore_requires_empty_workspace
+PASS: partial/overflow receipts, delivery/inventory/transit, journals/reversal/closing, multi-invoice idempotent settlement, rescheduling/cancellation conservation, automatic payroll/commissions, branch permissions, contract signature hash, bank calibration bounds, mocked PVGIS/SolarEdge, idempotent monitoring ticket, imports, effect rejection and complete backup/restore including live allocations.
+
+Les refus attendus sont provoqués volontairement par les tests.
+PVGIS/SolarEdge: fournisseurs simulés ; aucune connexion réelle ni calibration physique attestée.
