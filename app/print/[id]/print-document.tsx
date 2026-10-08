@@ -1,5 +1,5 @@
-import CalibratedEffect from './calibrated-effect';
 'use client';
+import CalibratedEffect from './calibrated-effect';
 import {useEffect,useState} from 'react';
 import {Entry,Line} from '@/lib/solar/domain';
 import {byKey,Lang,text} from '@/lib/solar/modules';

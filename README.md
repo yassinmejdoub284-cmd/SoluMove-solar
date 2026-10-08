@@ -2,6 +2,12 @@
 
 ERP photovoltaïque tunisien avec gestion commerciale, stock, RH et comptabilité générale. Français, arabe avec RTL et anglais. Cette version étend le code source fourni par le client ; elle n'est pas déployée sur son ancien Site.
 
+## Build Vercel
+
+Le fichier `vercel.json` choisit Next.js et `pnpm run build:vercel`, qui génère les manifestes attendus dans `.next`. Le build Worker/Vinext reste disponible avec `pnpm build` hors Vercel. `pnpm build` sur Vercel sélectionne également Next.js.
+
+Cette correction concerne le packaging du build. Le backend D1/R2 et l'authentification Sites n'ont pas été migrés. L'accueil Vercel affiche cette configuration manquante et les APIs refusent les identités transmises dans des en-têtes publics. Aucun stockage temporaire ni compte fictif ne remplace les services réels.
+
 ## Installation
 
 Node.js >= 22.13 et pnpm 11.25.0. Installer les dépendances avec `pnpm install --frozen-lockfile`, puis `pnpm build`. Les données utilisent Cloudflare D1 et les pièces jointes R2. Le développement est lancé avec `pnpm dev` ; la PWA reste installable dans Chrome/Edge.
