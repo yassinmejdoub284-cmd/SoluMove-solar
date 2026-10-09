@@ -16,6 +16,7 @@
     "check": "node node_modules/typescript/bin/tsc --noEmit && node --import ./scripts/test-loader.mjs scripts/domain-check.ts && node --import ./scripts/test-loader.mjs scripts/business-domain-check.ts && node --import ./scripts/test-loader.mjs scripts/enterprise-domain-check.ts",
     "test:worker": "node scripts/api-check.mjs && node scripts/business-check.mjs",
     "test:vercel": "node scripts/vercel-check.mjs",
+    "test:tunisia": "node --import ./scripts/test-loader.mjs scripts/tunisia-demo-check.ts && node --import ./scripts/test-loader.mjs scripts/workspace-pagination-check.ts && node scripts/tunisia-demo-api-check.mjs",
     "dev:vercel": "node scripts/dev-vercel.mjs",
     "start:vercel": "next start"
   },

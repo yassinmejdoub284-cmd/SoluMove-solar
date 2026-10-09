@@ -36,11 +36,13 @@ export async function POST(request:Request){try{
   if(e.kind!=='invoices'||e.data.status!=='issued')throw new Error('invalid_invoice');assertModule(ctx,'eInvoices','add');const id=e.id+'-teif',existing=(await core.all(ctx.owner)).find(r=>r.id===id);if(existing)return Response.json({id});const co=await db().prepare('SELECT data FROM company WHERE owner=?').bind(ctx.owner).first<{data:string}>();const client=await core.record(ctx,e.data.clientId,'clients');teifDraft(e.data,co?JSON.parse(co.data):{},client.data);const dossier={name:'El Fatoora · '+e.data.name,invoiceId:e.id,agencyId:e.data.agencyId,schemaVersion:'1.8.9 archive',status:'draft',qualificationRequired:true};assertRecord(ctx,{id,kind:'eInvoices',data:dossier},'add');await core.insert(ctx,'eInvoices',dossier,id).run();return Response.json({id});
  }
  if(b.action==='fiscalSubmission'){
+  if(e.demo===1)throw new Error('demo_not_declarable');
   if(!['withholdings','vatReturns'].includes(e.kind)||e.data.status!=='validated')throw new Error('invalid_status');if(e.kind==='vatReturns')assertAdmin(ctx);
   const file=await db().prepare('SELECT id FROM files WHERE owner=? AND record_id=? AND id=?').bind(ctx.owner,e.id,b.fileId).first();if(!file||!String(b.reference??'').trim())throw new Error('evidence_required');
   await db().batch([core.guard(ctx,e),core.update(ctx,e,{...e.data,status:'submitted',submissionReference:String(b.reference).slice(0,200),submissionFileId:b.fileId,submittedAt:new Date().toISOString(),submittedBy:ctx.actor,verificationMethod:'external_evidence_recorded'})]);return Response.json({ok:true});
  }
  if(b.action==='eInvoiceEvidence'){
+  if(e.demo===1)throw new Error('demo_not_declarable');
   assertAdmin(ctx);if(e.kind!=='eInvoices'||!['prepared','signed','submitted','accepted','rejected'].includes(b.status))throw new Error('invalid_status');
   const transitions:Record<string,string[]>={draft:['prepared'],prepared:['signed'],signed:['submitted'],submitted:['accepted','rejected'],rejected:['prepared']};if(!transitions[e.data.status]?.includes(b.status))throw new Error('invalid_status');
   const file=await db().prepare('SELECT id FROM files WHERE owner=? AND record_id=? AND id=?').bind(ctx.owner,e.id,b.fileId).first();if(!file||!String(b.reference??'').trim())throw new Error('evidence_required');

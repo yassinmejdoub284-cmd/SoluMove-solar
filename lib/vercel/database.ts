@@ -1,5 +1,5 @@
 import { createClient, type Client, type InStatement, type ResultSet, type InValue } from '@libsql/client';
-import migrations from './migrations.json';
+import migrations from './migrations.json' with {type:'json'};
 
 let client: Client | undefined;
 let ready: Promise<void> | undefined;
@@ -37,7 +37,9 @@ function result<T>(r: ResultSet) {
     meta: { changes: r.rowsAffected, last_row_id: Number(r.lastInsertRowid ?? 0) } };
 }
 export class Statement {
-  constructor(public readonly sql: string, public readonly args: InValue[] = []) {}
+  readonly sql:string;
+  readonly args:InValue[];
+  constructor(sql:string,args:InValue[]=[]){this.sql=sql;this.args=args;}
   bind(...args: InValue[]) { return new Statement(this.sql, args); }
   private async execute() { await ensureSchema(); return sqlClient().execute({ sql: this.sql, args: this.args }); }
   async all<T = Record<string, unknown>>() { return result<T>(await this.execute()); }
@@ -53,8 +55,25 @@ const adapter = {
   async batch<T = Record<string, unknown>>(statements: Statement[]) {
     await ensureSchema();
     if (!statements.length) return [];
-    // Trigger failures roll back the whole operation, as on D1.
-    return (await sqlClient().batch(statements.map(s => ({ sql: s.sql, args: s.args })), 'write')).map(r => result<T>(r));
+    const input=statements.map(s => ({sql:s.sql,args:s.args}));
+    const chunks:InStatement[][]=[];
+    let chunk:InStatement[]=[],bytes=0;
+    for(const statement of input){
+      const size=new TextEncoder().encode(JSON.stringify(statement)).byteLength;
+      if(chunk.length&&(bytes+size>512000||chunk.length>=100)){chunks.push(chunk);chunk=[];bytes=0;}
+      chunk.push(statement);bytes+=size;
+    }
+    if(chunk.length)chunks.push(chunk);
+    // Small operations keep one round trip. Large seeds use bounded requests
+    // within ONE write transaction; failures roll back every preceding chunk.
+    if(chunks.length===1)return (await sqlClient().batch(input,'write')).map(r=>result<T>(r));
+    const tx=await sqlClient().transaction('write');
+    try {
+      const results:ResultSet[]=[];
+      for(const part of chunks)results.push(...await tx.batch(part));
+      await tx.commit();return results.map(r=>result<T>(r));
+    }catch(error){await tx.rollback();throw error;}
+    finally{tx.close();}
   },
 };
 export function database() { return adapter; }

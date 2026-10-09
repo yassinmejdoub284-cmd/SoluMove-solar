@@ -10,6 +10,8 @@ BI multi-agences, commandes clients/inter-dépôts, transfert de dossiers, bons 
 
 Le fichier `vercel.json` choisit Next.js et `pnpm run build:vercel`, qui génère les manifestes attendus dans `.next`. Le build Worker/Vinext reste disponible avec `pnpm build` hors Vercel. `pnpm build` sur Vercel sélectionne également Next.js.
 
+Une simulation tunisienne de janvier 2025 au 9 octobre 2026 est disponible dans **Paramètres → Charger les données tunisiennes** : 7 754 fiches fictives couvrant commercial, stock, finance, RH, parc et BI. Chargement réservé à l’administrateur dans un espace vide ou contenant seulement des exemples, sans remplacement de données. [Périmètre, hypothèses et tests](docs/SIMULATION_TUNISIE_2025_2026.md).
+
 Sur Vercel, le backend utilise Turso/libSQL, Vercel Blob privé et Better Auth. La connexion affiche un formulaire d’activation protégé pour le propriétaire, puis un formulaire de connexion. Les identités envoyées dans des en-têtes publics sont ignorées. Configuration et activation : [docs/VERCEL_SETUP.md](docs/VERCEL_SETUP.md).
 
 ## Installation
