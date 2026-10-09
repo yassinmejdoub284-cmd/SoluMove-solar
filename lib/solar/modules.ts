@@ -1,3 +1,4 @@
+import {extendEnterprise} from './enterprise-modules';
 import {extendModules} from './advanced-modules';
 export type Lang = 'fr'|'ar'|'en';
 export type Words = [string,string,string];
@@ -53,6 +54,7 @@ M('missions',w('Missions & trajets','المهمات والتنقلات','Vehicle
 M('vehicleCosts',w('Carburant & entretien','الوقود وصيانة السيارات','Fuel & maintenance'),w('opération véhicule','عملية سيارة','vehicle operation'),5,'Fuel',[name,f('vehicleId','Véhicule','السيارة','Vehicle','link',{target:'vehicles',required:true}),project,date,f('type','Type d’opération','نوع العملية','Operation type','select',{options:['fuel','service','repair','insurance','inspection','tyres','roadTax','accident']}),amount,f('odometer','Kilométrage','الكيلومترات','Odometer','number'),f('liters','Carburant (litres)','الوقود (لتر)','Fuel (liters)','number'),f('nextDate','Prochaine échéance','الموعد القادم','Next due date','date'),f('provider','Prestataire / station','المزود أو المحطة','Provider / station'),notes],['draft','approved','paid'],['name','vehicleId','type','amount']),
 ];
 extendModules(modules);
+extendEnterprise(modules);
 for(const m of modules){if(m.key!=='agencies')m.fields.splice(1,0,f('agencyId','Agence','الوكالة','Branch','link',{target:'agencies'}));}
 export const byKey=Object.fromEntries(modules.map(m=>[m.key,m]));
-export const groups=[w('Commercial','المبيعات','Sales'),w('Opérations solaires','العمليات الشمسية','Solar operations'),w('Finance opérationnelle','المالية التشغيلية','Operational finance'),w('Achats & stock','الشراء والمخزون','Purchasing & inventory'),w('Ressources humaines','الموارد البشرية','Human resources'),w('Agences & parc','الوكالات والأسطول','Branches & fleet'),w('Comptabilité générale','المحاسبة العامة','General accounting'),w('Accès salariés','حسابات الموظفين','Staff access')];
+export const groups=[w('Commercial','المبيعات','Sales'),w('Opérations solaires','العمليات الشمسية','Solar operations'),w('Finance opérationnelle','المالية التشغيلية','Operational finance'),w('Achats & stock','الشراء والمخزون','Purchasing & inventory'),w('Ressources humaines','الموارد البشرية','Human resources'),w('Agences & parc','الوكالات والأسطول','Branches & fleet'),w('Comptabilité générale','المحاسبة العامة','General accounting'),w('Accès salariés','حسابات الموظفين','Staff access'),w('BI & prévisions','التحليل والتوقعات','BI & forecasts'),w('Fiscalité tunisienne','الجباية التونسية','Tunisian tax'),w('Communication','التواصل','Communication')];

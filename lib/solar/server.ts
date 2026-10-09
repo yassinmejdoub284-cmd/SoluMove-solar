@@ -1,8 +1,9 @@
+import {allows,inScope,type PermissionRule,type PermissionAction} from './permissions';
 import {env} from 'cloudflare:workers';
 import {getChatGPTUser} from '@/app/chatgpt-auth';
 import {headers} from 'next/headers';
 import type {Entry} from './domain';
-export type Access={owner:string;actor:string;email:string;admin:boolean;branches:string[];rules:{module:string,access:string}[]};
+export type Access={owner:string;actor:string;email:string;admin:boolean;branches:string[];warehouses?:string[];rules:PermissionRule[]};
 export async function access():Promise<Access>{
  const user=await getChatGPTUser();if(!user)throw new Error('unauthorized');
  const requested=(await headers()).get('x-solar-workspace');
@@ -16,15 +17,14 @@ export async function access():Promise<Access>{
  if(owner===user.userId&&isOwner)return {owner,actor:user.userId,email:user.email,admin:true,branches:[],rules:[]};
  const member=memberships.results.find(m=>m.owner===owner);if(!member)throw new Error('forbidden');const data=JSON.parse(member.data);
  const role=await db().prepare("SELECT data FROM records WHERE id=? AND owner=? AND kind='roles' AND archived=0 AND json_extract(data,'$.status')='active'").bind(data.roleId,owner).first<{data:string}>();if(!role)throw new Error('forbidden');
- return {owner,actor:user.userId,email:user.email,admin:false,branches:(data.branches??[]).map((r:any)=>r.agencyId),rules:JSON.parse(role.data).rules??[]};
+ return {owner,actor:user.userId,email:user.email,admin:false,branches:(data.branches??[]).map((r:any)=>r.agencyId),warehouses:(data.warehouses??[]).map((r:any)=>r.warehouseId),rules:JSON.parse(role.data).rules??[]};
 }
 export async function identity(){return (await access()).owner;}
-export function can(a:Access,module:string,write=false){return a.admin||(!['roles','users'].includes(module)&&a.rules.some(r=>r.module===module&&(!write||r.access==='write')));}
-export function assertModule(a:Access,module:string,write=false){if(!can(a,module,write))throw new Error('forbidden');}
-const shared=new Set(['clients','products','suppliers','accounts','journals','payrollPolicies','contractTemplates','bankProfiles']);
-export function visible(a:Access,e:Pick<Entry,'id'|'kind'|'data'>){if(!can(a,e.kind))return false;if(a.admin||shared.has(e.kind))return true;if(e.kind==='transits')return a.branches.includes(e.data.agencyId)||a.branches.includes(e.data.destinationAgencyId);return a.branches.includes(e.kind==='agencies'?e.id:e.data.agencyId);}
-export function assertRecord(a:Access,e:Pick<Entry,'id'|'kind'|'data'>,write=false){assertModule(a,e.kind,write);if(!visible(a,e))throw new Error('forbidden_branch');}
+export function can(a:Access,module:string,action:PermissionAction=false){return allows(a,module,action);}
+export function assertModule(a:Access,module:string,action:PermissionAction=false){if(!can(a,module,action))throw new Error('forbidden');}
+export function visible(a:Access,e:Pick<Entry,'id'|'kind'|'data'>){return inScope(a,e);}
+export function assertRecord(a:Access,e:Pick<Entry,'id'|'kind'|'data'>,action:PermissionAction=false){assertModule(a,e.kind,action);if(!visible(a,e))throw new Error('forbidden_branch');}
 export function assertAdmin(a:Access){if(!a.admin)throw new Error('forbidden');}
 export function assertOrigin(request:Request){const origin=request.headers.get('origin');const trusted=process.env.SOLAR_VERCEL_BUILD==='1'&&process.env.BETTER_AUTH_URL?process.env.BETTER_AUTH_URL:request.url;if(origin&&origin!==new URL(trusted).origin)throw new Error('invalid_origin');}
 export function db():D1Database{if(!env.DB)throw new Error('storage_unavailable');return env.DB;}
-export function failure(error:unknown){const s=error instanceof Error?error.message:'server_error';console.error('solar request failure',s);const code=['overpayment','insufficient_stock','insufficient_available_stock','invalid_allocation','serial_location','serial_count','vehicle_overlap','conflict','period_closed','unbalanced_entry','invalid_journal_line','overreceipt','insufficient_leave'].find(c=>s.includes(c))??(s.startsWith('D1_ERROR')?'operation_rejected':s);return Response.json({error:code},{status:code==='unauthorized'?401:code.startsWith('forbidden')?403:code==='storage_unavailable'?503:400});}
+export function failure(error:unknown){const s=error instanceof Error?error.message:'server_error';console.error('solar request failure',s);const code=['overpayment','insufficient_stock','insufficient_available_stock','invalid_allocation','serial_location','serial_count','vehicle_overlap','conflict','period_closed','unbalanced_entry','invalid_journal_line','overreceipt','insufficient_leave','overdelivery','overtransfer','credit_exceeds_invoice','retention_exceeds_payment'].find(c=>s.includes(c))??(s.startsWith('D1_ERROR')?'operation_rejected':s);return Response.json({error:code},{status:code==='unauthorized'?401:code.startsWith('forbidden')?403:code==='storage_unavailable'?503:400});}

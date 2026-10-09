@@ -1,5 +1,5 @@
 import {Entry} from './domain';
-export type WorkspaceData={records:Entry[];allocations:any[];stock:any[];events:any[];access?:{actor:string,owner:string,admin:boolean,branches:string[],read:string[],write:string[]};company:Record<string,string>;files:any[];serials:any[]};
+export type WorkspaceData={generatedAt?:string;records:Entry[];allocations:any[];stock:any[];events:any[];access?:{actor:string,owner:string,admin:boolean,branches:string[],read:string[],write:string[],add?:string[],delete?:string[],warehouses?:string[]};company:Record<string,string>;files:any[];serials:any[]};
 export const emptyData:WorkspaceData={records:[],allocations:[],stock:[],events:[],company:{},files:[],serials:[]};
 export async function api(body:unknown){const r=await fetch('/api/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result:any=await r.json();if(!r.ok)throw new Error(result.error);return result;}
 function openDB():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const req=indexedDB.open('solumove-solar-snapshot',1);req.onupgradeneeded=()=>req.result.createObjectStore('snapshots');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}

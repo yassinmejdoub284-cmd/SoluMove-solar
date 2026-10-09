@@ -1,3 +1,4 @@
+import {checkEnterprise} from './enterprise-api-check.mjs';
 import {spawn} from 'node:child_process';
 import {mkdtemp,rm} from 'node:fs/promises';
 import path from 'node:path';
@@ -49,6 +50,7 @@ try{
  const staff=ok(await request('/api/workspace',undefined,staffCookie));assert.equal(staff.access.admin,false);assert.equal(staff.access.owner,owner);assert.ok(staff.records.every(r=>['invoices','clients'].includes(r.kind)));
  v=await request('/api/workspace',{action:'company',data:{name:'Forbidden'}},staffCookie);assert.equal(v.r.status,403);
  v=await request('/api/invitations',{recordId:staffId},staffCookie);assert.equal(v.r.status,403);
+ await checkEnterprise({request,workspace,save,ok,cookie,staffCookie,owner,prefix,role,staffId});
  v=await request('/api/activation',{action:'invite',token,password});assert.equal(v.r.status,400);assert.equal(v.data.error,'invalid_invitation');
  v=await request('/api/activation',{key:'wrong'});assert.equal(v.r.status,429);
  v=await request('/api/auth/sign-out',{},cookie,{Origin:'https://evil.example'});assert.equal(v.r.status,403);

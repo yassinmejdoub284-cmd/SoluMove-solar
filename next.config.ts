@@ -3,6 +3,8 @@ import path from "node:path";
 
 const vercelBuild = process.env.SOLAR_VERCEL_BUILD === "1" || process.env.VERCEL === "1";
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['xmllint-wasm'],
+  outputFileTracingIncludes: {'/api/enterprise': ['./node_modules/xmllint-wasm/xmllint.wasm', './node_modules/xmllint-wasm/xmllint-node.js']},
   env: { SOLAR_VERCEL_BUILD: vercelBuild ? "1" : "0" },
   webpack(config, { webpack }) {
     if (vercelBuild) {

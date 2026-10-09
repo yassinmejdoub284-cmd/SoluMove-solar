@@ -1,0 +1,17 @@
+SoluMove Solar 0.4 — vérification finale, 9 octobre 2026
+
+Environnement local : Node 24.19.0, pnpm 11.25.0. Cible Vercel : Node 22.x.
+Build Next.js 16.3.4 : réussi.
+Assets du validateur XML (WASM et worker) : inclus dans le traçage serverless et présents.
+
+PASS: financial rounding, installment conservation, month-end dates, payroll checks, cheque ceilings, sample records and 3-language module coverage.
+PASS: progressive tax, month prorata/unpaid leave/overtime/commissions, contribution snapshots, leave accrual, project margin, solar sizing, CSV quoting and bank paper bounds.
+PASS: granular permissions, warehouse isolation, chat privacy, exact withholding calculations, official TEJ XSD exports and rejection, credit-net BI, stock valuation and forecast deduplication.
+PASS: concurrent key custody, vehicle state preservation, maintenance schedule, stock exit rollback, order overdelivery guard, client dossier transfer, TEJ initial/rectification XSD exports, withholding correction/cancellation and payment cap, VAT closing/evidence requirement, partial-payment credit application/cap, personal notifications, chat privacy/idempotency and add/edit/delete isolation.
+PASS: Next production + real libSQL migrations, guarded owner activation, signed sessions, forged identity rejection, closed signup, payments/stock rollback, accounting, invitations, staff permissions, CSRF and session revocation.
+
+Aucun push, déploiement, dépôt fiscal ou message externe effectué.
+Les tests API utilisent une base libSQL temporaire, des comptes et données de recette.
+Non attestés : homologation/dépôt/signature TTN, acceptation réelle TEJ, périphérique QR physique, impression physique, transfert Blob réel.
+Le XML TEIF reste un brouillon ; les preuves de dépôt sont enregistrées, pas authentifiées cryptographiquement.
+Les XSD TEJ originaux sont conservés ; la correction de syntaxe appliquée à la copie de validation est documentée.

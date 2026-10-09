@@ -1,6 +1,10 @@
-# SoluMove Solar — version 0.3.0
+# SoluMove Solar — version 0.4.0
 
 ERP photovoltaïque tunisien avec gestion commerciale, stock, RH et comptabilité générale. Français, arabe avec RTL et anglais. Cette version étend le code source fourni par le client ; elle n'est pas déployée sur son ancien Site.
+
+## Extension BI et opérations
+
+BI multi-agences, commandes clients/inter-dépôts, transfert de dossiers, bons de sortie, avoirs imputables, QR unitaires et capture scanner dans les documents, garde des clés, entretien, rapprochement TVA, retenues TEJ, prévisions de trésorerie, PV, permissions CRUD par périmètre, notifications et chat privé avec pièces jointes. Modes clair/sombre. Guide détaillé et limites fiscales : [docs/ENTERPRISE_0.4.md](docs/ENTERPRISE_0.4.md). Les nouveaux libellés sont principalement en français.
 
 ## Build Vercel
 
@@ -22,8 +26,8 @@ Le fichier `.openai/hosting.json` conserve l'identifiant du Site d'origine. Il n
 
 ```bash
 pnpm check
-pnpm build
-pnpm test:worker
+pnpm build:vercel
+pnpm test:vercel
 ```
 
 Les tests Worker créent une base D1 et un stockage R2 temporaires, appliquent les migrations réelles et interrogent le code compilé. Les réponses PVGIS/SolarEdge utilisées dans les tests sont simulées ; elles ne prouvent pas une connexion à une installation réelle.
