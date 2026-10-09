@@ -1,14 +1,8 @@
-/**
- * Build boundary for the existing Cloudflare backend on Vercel.
- * No database or bucket is fabricated: runtime access fails explicitly until
- * the backend has been migrated. The Worker build uses its real bindings.
- */
+import { database } from '../lib/vercel/database';
+import { bucket } from '../lib/vercel/blob';
+// Real bindings for the existing business handlers on Vercel.
 export const env = {
-  get DB(): D1Database {
-    throw new Error("storage_unavailable");
-  },
-  get BUCKET(): R2Bucket {
-    throw new Error("storage_unavailable");
-  },
-  SOLAREDGE_API_KEY: process.env.SOLAREDGE_API_KEY,
+  get DB(): D1Database { return database() as unknown as D1Database; },
+  get BUCKET(): R2Bucket { return bucket as unknown as R2Bucket; },
+  get SOLAREDGE_API_KEY() { return process.env.SOLAREDGE_API_KEY; },
 };

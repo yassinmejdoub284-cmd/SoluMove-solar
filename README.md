@@ -1,4 +1,4 @@
-# SoluMove Solar — version 0.2.0
+# SoluMove Solar — version 0.3.0
 
 ERP photovoltaïque tunisien avec gestion commerciale, stock, RH et comptabilité générale. Français, arabe avec RTL et anglais. Cette version étend le code source fourni par le client ; elle n'est pas déployée sur son ancien Site.
 
@@ -6,11 +6,11 @@ ERP photovoltaïque tunisien avec gestion commerciale, stock, RH et comptabilit�
 
 Le fichier `vercel.json` choisit Next.js et `pnpm run build:vercel`, qui génère les manifestes attendus dans `.next`. Le build Worker/Vinext reste disponible avec `pnpm build` hors Vercel. `pnpm build` sur Vercel sélectionne également Next.js.
 
-Cette correction concerne le packaging du build. Le backend D1/R2 et l'authentification Sites n'ont pas été migrés. L'accueil Vercel affiche cette configuration manquante et les APIs refusent les identités transmises dans des en-têtes publics. Aucun stockage temporaire ni compte fictif ne remplace les services réels.
+Sur Vercel, le backend utilise Turso/libSQL, Vercel Blob privé et Better Auth. La connexion affiche un formulaire d’activation protégé pour le propriétaire, puis un formulaire de connexion. Les identités envoyées dans des en-têtes publics sont ignorées. Configuration et activation : [docs/VERCEL_SETUP.md](docs/VERCEL_SETUP.md).
 
 ## Installation
 
-Node.js >= 22.13 et pnpm 11.25.0. Installer les dépendances avec `pnpm install --frozen-lockfile`, puis `pnpm build`. Les données utilisent Cloudflare D1 et les pièces jointes R2. Le développement est lancé avec `pnpm dev` ; la PWA reste installable dans Chrome/Edge.
+Node.js 22 et pnpm 11.25.0. Pour Vercel : `pnpm build:vercel`, `pnpm start:vercel` et `pnpm test:vercel`. Pour le développement Next.js : `pnpm dev:vercel`. Pour la version Worker : Installer les dépendances avec `pnpm install --frozen-lockfile`, puis `pnpm build`. Les données utilisent Cloudflare D1 et les pièces jointes R2. Le développement est lancé avec `pnpm dev` ; la PWA reste installable dans Chrome/Edge.
 
 L'authentification attend la passerelle Sites/ChatGPT. Les en-têtes `oai-authenticated-user-*` doivent provenir de cette passerelle de confiance, jamais d'un accès Worker public acceptant des en-têtes arbitraires. Les tests les injectent exclusivement dans un Worker temporaire local.
 
@@ -30,7 +30,7 @@ Les tests Worker créent une base D1 et un stockage R2 temporaires, appliquent l
 
 ## Fonctions ajoutées
 
-- Comptes salariés liés à leur identité ChatGPT, rôles lecture/écriture et agences autorisées.
+- Comptes salariés sur invitation dans Vercel (identité ChatGPT sur Sites), rôles lecture/écriture et agences autorisées.
 - Commandes à lignes, réceptions partielles, BL, inventaires avec contrôle de concurrence et stock en transit.
 - Règlements multi-factures/multi-échéances, rééchelonnement, suivi des impayés et rejet d'effets.
 - Plan de comptes configurable, journaux, écritures équilibrées, grand livre, balance, liaisons avec ventes/achats/paie/règlements, extournes et clôtures.

@@ -19,9 +19,14 @@ const SIGN_OUT_PATH = "/signout-with-chatgpt";
 const CALLBACK_PATH = "/callback";
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
-  // A public Vercel deployment has no trusted Sites identity gateway.
-  // Never accept caller-supplied identity headers as an authenticated session.
-  if (process.env.SOLAR_VERCEL_BUILD === "1") return null;
+  if (process.env.SOLAR_VERCEL_BUILD === "1") {
+    const requestHeaders = await headers();
+    if (!requestHeaders.get('cookie')) return null;
+    const {getAuth} = await import('@/lib/vercel/auth');
+    const session = await (await getAuth()).api.getSession({headers: requestHeaders});
+    if (!session) return null;
+    return {userId:session.user.id,email:session.user.email,displayName:session.user.name,fullName:session.user.name};
+  }
   const requestHeaders = await headers();
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER);
@@ -53,6 +58,7 @@ export async function requireChatGPTUser(
 
 export function chatGPTSignInPath(returnTo: string): string {
   const safeReturnTo = safeRelativeReturnPath(returnTo);
+  if (process.env.SOLAR_VERCEL_BUILD === '1') return `/sign-in?return_to=${encodeURIComponent(safeReturnTo)}`;
   return `${SIGN_IN_PATH}?return_to=${encodeURIComponent(safeReturnTo)}`;
 }
 

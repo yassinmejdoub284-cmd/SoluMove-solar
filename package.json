@@ -1,9 +1,9 @@
 {
   "name": "solumove-solar",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "engines": {
-    "node": ">=22.13.0"
+    "node": "22.x"
   },
   "scripts": {
     "install:ci": "bash scripts/install-pnpm.sh",
@@ -14,12 +14,18 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "check": "node node_modules/typescript/bin/tsc --noEmit && node --import ./scripts/test-loader.mjs scripts/domain-check.ts && node --import ./scripts/test-loader.mjs scripts/business-domain-check.ts",
-    "test:worker": "node scripts/api-check.mjs && node scripts/business-check.mjs"
+    "test:worker": "node scripts/api-check.mjs && node scripts/business-check.mjs",
+    "test:vercel": "node scripts/vercel-check.mjs",
+    "dev:vercel": "node scripts/dev-vercel.mjs",
+    "start:vercel": "next start"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@hookform/resolvers": "^5.7.1",
+    "@libsql/client": "^0.18.0",
     "@shadcn/react": "^0.3.0",
+    "@vercel/blob": "^2.8.0",
+    "better-auth": "^1.7.7",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "^1.1.1",

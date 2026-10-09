@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   webpack(config, { webpack }) {
     if (vercelBuild) {
       // Cloudflare's built-in module does not exist in Vercel's Node runtime.
-      // Keep the Worker source intact and explicitly reject unavailable bindings.
+      // Keep Worker bindings intact and use Turso/Blob in the Node runtime.
       config.plugins.push(new webpack.NormalModuleReplacementPlugin(
         /^cloudflare:workers$/,
         path.resolve("build/vercel-bindings.ts"),
