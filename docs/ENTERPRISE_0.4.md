@@ -62,7 +62,7 @@ Pour une émission opérationnelle : obtenir les XSD/codes TTN en vigueur et l�
 
 `pnpm check` : types, logique financière antérieure, permissions, millimes, QR, retenues effectives, TEJ XSD et rejets, BI/avoirs/stock/prévisions.
 
-`pnpm build:vercel` : compilation Next.js avec la route enterprise et traçage du Worker/WASM xmllint.
+`pnpm build:vercel` : compilation Next.js avec la route enterprise et traçage du Worker/WASM xmllint. Les inclusions utilisent le chemin physique du paquet pnpm pour éviter de livrer des fichiers sous un lien symbolique de dossier. Un contrôle après compilation vérifie tous les manifestes `.nft.json`, l’absence de ce conflit et la présence des deux fichiers XML à leurs chemins physiques.
 
 `pnpm test:vercel` : serveur de production Next.js, base libSQL temporaire et migrations réelles ; authentification/invitations/CSRF ; concurrence de clés ; entretien ; rollback stock ; plafonds BC/BL/transit ; transfert dossier ; export TEJ initial et rectificatif ; retenues/corrections/annulations ; clôture TVA ; plafonds et imputation d’avoir ; chat/idempotence/confidentialité ; permissions ajout/modification/archivage.
 
