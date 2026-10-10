@@ -55,9 +55,10 @@ try{
  await checkEnterprise({request,workspace,save,ok,cookie,staffCookie,owner,prefix,role,staffId});
  await checkTechnical({request,workspace,save,ok,staffCookie,owner,prefix,folder});
  const agendaFixture=await checkAgenda({request,workspace,save,ok,staffCookie,prefix,role,staffId});
+ if(process.env.SOLAR_PLAN_UI_CHECK==='1'){const {checkPlansUI}=await import('./plan-ui-check.mjs');await checkPlansUI({origin,cookie});}
  if(process.env.SOLAR_UI_CHECK==='1'){const {checkAgendaUI}=await import('./agenda-ui-check.mjs');await checkAgendaUI({origin,cookie,staffCookie,folder,agendaFixture});}
  v=await request('/api/activation',{action:'invite',token,password});assert.equal(v.r.status,400);assert.equal(v.data.error,'invalid_invitation');
- v=await request('/api/activation',{key:'wrong'});assert.equal(v.r.status,429);
+ for(let attempt=0;attempt<6;attempt++){v=await request('/api/activation',{key:'wrong'});if(v.r.status===429)break;assert.equal(v.r.status,400);}assert.equal(v.r.status,429);
  v=await request('/api/auth/sign-out',{},cookie,{Origin:'https://evil.example'});assert.equal(v.r.status,403);
  ok(await request('/api/auth/sign-out',{}));v=await workspace();assert.equal(v.r.status,401);
  console.log('PASS: Next production + real libSQL migrations, guarded owner activation, signed sessions, forged identity rejection, closed signup, payments/stock rollback, accounting, invitations, staff permissions, CSRF and session revocation.');

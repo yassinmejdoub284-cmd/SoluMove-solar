@@ -9,6 +9,16 @@ export async function checkTechnical({request,workspace,save,ok,staffCookie,owne
  // Evidence metadata fixtures exercise relational controls, not real signed documents or Blob uploads.
  const file=async(parent,name='TEST fixture.pdf')=>{const id=crypto.randomUUID();await sql.execute({sql:'INSERT INTO files(id,owner,record_id,filename,content_type,size,created_at) VALUES(?,?,?,?,?,?,?)',args:[id,owner,parent,name,'application/pdf',100,new Date().toISOString()]});return id;};
  try{
+ const priorExamples=ok(await workspace());
+ let denied=await request('/api/technical',{action:'loadExamples'},staffCookie);assert.equal(denied.r.status,403);
+ denied=await request('/api/technical',{action:'loadExamples'},'',{Origin:'https://evil.example'});assert.equal(denied.r.status,401);
+ denied=await request('/api/technical',{action:'loadExamples'},undefined,{Origin:'https://evil.example'});assert.equal(denied.r.status,400);
+ const exampleLoads=await Promise.all([request('/api/technical',{action:'loadExamples'}),request('/api/technical',{action:'loadExamples'})]);
+ const exampleIds=ok(exampleLoads[0]).ids;assert.equal(exampleIds.length,3);assert.deepEqual(ok(exampleLoads[1]).ids,exampleIds);
+ const withExamples=ok(await workspace());assert.deepEqual(withExamples.stock,priorExamples.stock);for(const old of priorExamples.records)assert.deepEqual(withExamples.records.find(e=>e.id===old.id),old);
+ const samplePlans=withExamples.records.filter(e=>exampleIds.includes(e.id));assert.equal(samplePlans.length,3);assert.ok(samplePlans.every(e=>e.demo===1&&e.data.studySnapshot&&!e.data.approvalFileId&&e.data.status==='draft'));
+ for(const id of exampleIds){const obj=await request(`/api/technical?id=${id}&format=obj`);assert.equal(obj.r.status,200);assert.match(obj.data,/mtllib solar-plan.mtl/);assert.match(obj.data,/o panel-1/);assert.match(obj.r.headers.get('cache-control'),/private, no-store/);assert.equal((await request(`/api/technical?id=${id}&format=obj`,undefined,staffCookie)).r.status,403);}
+ assert.match((await request(`/api/technical?id=${exampleIds[0]}&format=mtl`)).data,/newmtl dc/);
  const agency=prefix+'demo-agency-1',wh=prefix+'demo-warehouse-1',to=prefix+'demo-warehouse-2',date='2026-10-09';
  const client=await save('clients',{name:'Technical fixture Tunis',taxId:'0001238L',phone:'20000000',address:'Tunis',agencyId:agency,desiredKwc:6,status:'active'});
  const site=await save('sites',{name:'Site Tunis',clientId:client,address:'Tunis',gps:'36.8065,10.1815',stegRef:'123456789',district:'Tunis',connection:'threePhase',subscribedKva:10,gridKv:.4,agencyId:agency,status:'active'});
@@ -60,6 +70,6 @@ export async function checkTechnical({request,workspace,save,ok,staffCookie,owne
  const xml=await request('/api/enterprise?tej=1&period=2026-10&act=0');assert.equal(xml.r.status,200,JSON.stringify(xml.data));assert.match(xml.r.headers.get('x-solar-validation'),/XSD-TEJ/);
  p=await get(payment);ok(await request('/api/workspace',{action:'cancelPayment',id:payment,revision:p.revision,reason:'Test cancellation'}));assert.equal((await get(invoice)).data.remainingGross,595500);assert.equal((await get(second)).data.status,'cleared');assert.ok(ok(await workspace()).records.some(r=>r.kind==='withholdings'&&r.data.operation==='cancel'&&r.data.paymentId===payment));
  await reject(request(`/api/technical?id=${dossier}&format=dossier`,undefined,staffCookie));
- console.log('PASS: encrypted connector vault, human CAPTCHA gating/replay/stale-site rejection, contextual BT dossier prefill/readiness, approval-driven CAD/unifilar, engineer review/reservation, assigned cable stock/cut/offcut/transfer controls, partial supplier withholding/TEJ XSD/idempotency/overpayment/cancellation/journals and staff isolation. Gateway and document evidence are test fixtures.');
+ console.log('PASS: idempotent linked 3D samples on an operational workspace, OBJ/MTL exports and staff/CSRF isolation; encrypted connector vault, human CAPTCHA gating/replay/stale-site rejection, contextual BT dossier prefill/readiness, approval-driven CAD/unifilar, engineer review/reservation, assigned cable stock/cut/offcut/transfer controls, partial supplier withholding/TEJ XSD/idempotency/overpayment/cancellation/journals and staff isolation. Gateway and document evidence are test fixtures.');
  }finally{sql.close();}
 }

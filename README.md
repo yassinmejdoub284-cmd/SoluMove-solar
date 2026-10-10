@@ -54,6 +54,10 @@ Les tests Worker créent une base D1 et un stockage R2 temporaires, appliquent l
 
 Menu par activité, recherche de modules, favoris, fiches liées et historique de navigation. Agenda général administrateur et agenda personnel salarié : jour, semaine, mois, équipe, liste, tâches avec priorités/checklists/dépendances, réunions récurrentes, alertes de chevauchement, notifications internes et export ICS avec alarmes.
 
+## Plans 2D / 3D et mobile
+
+Galerie de trois exemples tunisiens liés, vue 3D tactile avec calques et identification des éléments, exports DXF/OBJ/MTL. Les listes deviennent des cartes sur téléphone/tablette et les formulaires occupent le plein écran sur téléphone. Voir `docs/PLANS_3D_MOBILE.md`.
+
 ## Guides
 
 - `docs/NAVIGATION_AGENDA.md` : agendas, comptes salariés, permissions et rappels.

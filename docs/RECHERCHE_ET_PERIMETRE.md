@@ -24,7 +24,7 @@ Ces sources ne remplacent pas les données propres à l'entreprise. Le profil tu
 | Paie | CNSS/perte emploi/IRPP/CSS paramétrés, prorata, overtime, commissions, coût employeur, profil figé | Régime et convention ; régularisation annuelle variable, exemptions et déclarations officielles non inclus |
 | Congés | Acquisition paramétrée, report, solde, dépassement/chevauchement refusés | Calendrier ouvrable/fériés et règles interannuelles spécialisées |
 | Contrats | 24 bases FR/AR/EN, modèles approuvables/versionnés, contrat et avenant, preuve documentaire hashée | Clauses définitives propres à la société ; pas de signature certifiée externe |
-| Solaire | PVGIS connecté dans le code, production mensuelle/annuelle, hypothèses, batterie indicative | Validation technique ; toiture 3D, calcul électrique certifié et dépôt STEG/ANME non inclus |
+| Solaire | PVGIS connecté dans le code, production mensuelle/annuelle, hypothèses, batterie indicative, maquette 3D rectangulaire et exports DXF/OBJ | Validation technique ; toitures multiples, ombrages horaires, calcul certifié et dépôt STEG/ANME non inclus |
 | Monitoring | Relevés, import, SolarEdge, seuil d'alerte et ticket SAV | Clé/site réels ; autres marques et collecte planifiée non inclus |
 | Alertes | Impayés, dates, stock, communication/production | Calcul à la consultation ; cron, e-mail/SMS/WhatsApp non inclus |
 | Import et reprise | CSV/JSON validé puis atomique, sauvegarde avec fichiers/audit, restauration vide testée | Volumes au-delà des limites interactives : procédure D1/R2 administrée |

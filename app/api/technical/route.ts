@@ -5,8 +5,13 @@ import {record,all} from '@/lib/solar/business-server';
 import * as technical from '@/lib/solar/technical-server';
 import {technicalDXF,BT_TEMPLATE,MT_TEMPLATE,stegChecklist} from '@/lib/solar/technical-domain';
 import {xmlEscape} from '@/lib/solar/fiscal';
+import {planOBJ,planMTL} from '@/lib/solar/plan-3d';
+import {loadTechnicalExamples} from '@/lib/solar/technical-examples-server';
 export async function GET(request:Request){try{
  const ctx=await access(),url=new URL(request.url),e=await record(ctx,url.searchParams.get('id')??'');
+ if(['obj','mtl'].includes(url.searchParams.get('format')??'')){
+  if(e.kind!=='technicalPlans'||!(e.data.snapshot??e.data.studySnapshot))throw new Error('plan_not_generated');const format=url.searchParams.get('format');return new Response(format==='obj'?planOBJ(e):planMTL(),{headers:{'Content-Type':'text/plain; charset=utf-8','Content-Disposition':`attachment; filename="solar-plan.${format}"`,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+ }
  if(url.searchParams.get('format')==='dxf'){
   if(e.kind!=='technicalPlans')throw new Error('invalid_reference');return new Response(technicalDXF(e),{headers:{'Content-Type':'application/dxf','Content-Disposition':`attachment; filename="solar-plan-${e.id.replace(/[^a-zA-Z0-9-]/g,'')}.dxf"`,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
  }
@@ -19,6 +24,7 @@ export async function GET(request:Request){try{
 }catch(e){return failure(e);}}
 export async function POST(request:Request){try{
  const ctx=await access();assertOrigin(request);const raw=await request.text();if(raw.length>64000)throw new Error('request_too_large');const b=JSON.parse(raw),action=b.action;
+ if(action==='loadExamples')return Response.json(await loadTechnicalExamples(ctx));
  const read=['createDossier','createPlan'].includes(action),e=await record(ctx,b.id,undefined,!read);
  if(!read&&e.revision!==b.revision)throw new Error('conflict');
  const result=action==='verifySteg'?await technical.verifyStegEvidence(ctx,e):action==='createDossier'?await technical.createStegDossier(ctx,e):action==='createPlan'?await technical.createPlan(ctx,e):action==='approveSteg'?await technical.approveSteg(ctx,e,b):action==='generateStudyPlan'?await technical.generateStudyPlan(ctx,e):action==='generatePlan'?await technical.generatePlan(ctx,e):action==='reviewPlan'?await technical.reviewPlan(ctx,e,b):action==='reservePlan'?await technical.reservePlan(ctx,e,b):action==='activateDrum'?await technical.activateDrum(ctx,e):action==='transferDrum'?await technical.transferDrum(ctx,e,b):action==='cutCable'?await technical.cutCable(ctx,e):action==='returnCable'?await technical.returnCable(ctx,e):null;

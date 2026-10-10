@@ -16,7 +16,7 @@
 | Livrable | Ce que cette version produit |
 |---|---|
 | Étude énergétique | Résultats mensuels importés avec rapport, météo/période, énergie, productible et PR calculés. P50/P90 saisis uniquement avec justification des incertitudes. Le connecteur PVGIS existant reste disponible. |
-| Implantation | Calepinage d'une surface rectangulaire mesurée, obstacles, chaînes, rails, ancrages indicatifs et trajets câble. Visualisation 2D et export DXF en mm pour AutoCAD. |
+| Implantation | Calepinage d'une surface rectangulaire mesurée, obstacles, chaînes, rails, ancrages indicatifs et trajets câble. Visualisation 2D / 3D tactile, hauteur de toiture, panneaux inclinés et supports indicatifs ; export DXF en mm et OBJ/MTL en mètres. Voir [le guide](PLANS_3D_MOBILE.md). |
 | Unifilaire | Schéma de principe généré depuis les chaînes et groupes MPPT, onduleur, circuits, réseau et terre. Les calibres et protections ne sont pas inventés. |
 | Note câbles | Longueurs 3D issues des points x/y/z saisis, quantité par conducteurs et marge, section, Iz corrigé fourni et chute de tension DC/AC. |
 | Dossier | Demande à signer, identification, mémoire énergétique, implantation/chaînes, câbles, cadre juridique et bordereau d'annexes. Impression navigateur/PDF. |
