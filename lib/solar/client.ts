@@ -1,5 +1,5 @@
 import type {Entry} from './domain';
-export type WorkspaceData={generatedAt?:string;records:Entry[];allocations:any[];stock:any[];events:any[];access?:{actor:string,owner:string,admin:boolean,branches:string[],read:string[],write:string[],add?:string[],delete?:string[],warehouses?:string[]};company:Record<string,string>;files:any[];serials:any[]};
+export type WorkspaceData={generatedAt?:string;records:Entry[];allocations:any[];stock:any[];events:any[];access?:{actor:string,owner:string,admin:boolean,employeeId?:string,branches:string[],read:string[],write:string[],add?:string[],delete?:string[],warehouses?:string[]};company:Record<string,string>;files:any[];serials:any[]};
 export const emptyData:WorkspaceData={records:[],allocations:[],stock:[],events:[],company:{},files:[],serials:[]};
 export async function fetchWorkspaceSnapshot():Promise<WorkspaceData>{
   const read=async(page:number)=>{const r=await fetch('/api/workspace?page='+page,{cache:'no-store'});const data:any=await r.json();if(!r.ok)throw new Error(data.error);return data;};

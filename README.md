@@ -50,8 +50,13 @@ Les tests Worker créent une base D1 et un stockage R2 temporaires, appliquent l
 - Estimation PVGIS, dimensionnement batterie indicatif, relevés monitoring et connecteur SolarEdge.
 - Alertes internes, import CSV/JSON contrôlé, sauvegarde/restauration avec pièces et historique, rentabilité par chantier.
 
+## Navigation et agenda
+
+Menu par activité, recherche de modules, favoris, fiches liées et historique de navigation. Agenda général administrateur et agenda personnel salarié : jour, semaine, mois, équipe, liste, tâches avec priorités/checklists/dépendances, réunions récurrentes, alertes de chevauchement, notifications internes et export ICS avec alarmes.
+
 ## Guides
 
+- `docs/NAVIGATION_AGENDA.md` : agendas, comptes salariés, permissions et rappels.
 - `docs/DEMARRAGE.md` : parcours de configuration et utilisation.
 - `docs/LIVRAISON_0.2.md` : résultats des tests et points restant à configurer.
 - `docs/RECHERCHE_ET_PERIMETRE.md` : sources et limites exactes.

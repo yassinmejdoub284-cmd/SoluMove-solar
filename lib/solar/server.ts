@@ -3,7 +3,7 @@ import {env} from 'cloudflare:workers';
 import {getChatGPTUser} from '@/app/chatgpt-auth';
 import {headers} from 'next/headers';
 import type {Entry} from './domain';
-export type Access={owner:string;actor:string;email:string;admin:boolean;branches:string[];warehouses?:string[];rules:PermissionRule[]};
+export type Access={owner:string;actor:string;email:string;admin:boolean;branches:string[];warehouses?:string[];employeeId?:string;rules:PermissionRule[]};
 export async function access():Promise<Access>{
  const user=await getChatGPTUser();if(!user)throw new Error('unauthorized');
  const requested=(await headers()).get('x-solar-workspace');
@@ -17,7 +17,7 @@ export async function access():Promise<Access>{
  if(owner===user.userId&&isOwner)return {owner,actor:user.userId,email:user.email,admin:true,branches:[],rules:[]};
  const member=memberships.results.find(m=>m.owner===owner);if(!member)throw new Error('forbidden');const data=JSON.parse(member.data);
  const role=await db().prepare("SELECT data FROM records WHERE id=? AND owner=? AND kind='roles' AND archived=0 AND json_extract(data,'$.status')='active'").bind(data.roleId,owner).first<{data:string}>();if(!role)throw new Error('forbidden');
- return {owner,actor:user.userId,email:user.email,admin:false,branches:(data.branches??[]).map((r:any)=>r.agencyId),warehouses:(data.warehouses??[]).map((r:any)=>r.warehouseId),rules:JSON.parse(role.data).rules??[]};
+ return {owner,actor:user.userId,email:user.email,admin:false,employeeId:data.employeeId,branches:(data.branches??[]).map((r:any)=>r.agencyId),warehouses:(data.warehouses??[]).map((r:any)=>r.warehouseId),rules:JSON.parse(role.data).rules??[]};
 }
 export async function identity(){return (await access()).owner;}
 export function can(a:Access,module:string,action:PermissionAction=false){return allows(a,module,action);}

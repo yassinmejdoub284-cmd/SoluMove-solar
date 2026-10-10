@@ -1,0 +1,4 @@
+import {access,assertOrigin,failure} from '@/lib/solar/server';
+import {agendaRead,agendaAction,agendaICS} from '@/lib/solar/agenda-server';
+export async function GET(request:Request){try{const ctx=await access(),url=new URL(request.url),data=await agendaRead(ctx,Object.fromEntries(url.searchParams));if(url.searchParams.get('format')==='ics')return new Response(agendaICS(data.items),{headers:{'Content-Type':'text/calendar; charset=utf-8','Content-Disposition':'attachment; filename="solumove-agenda.ics"','Cache-Control':'private, no-store'}});return Response.json(data,{headers:{'Cache-Control':'no-store'}});}catch(e){return failure(e);}}
+export async function POST(request:Request){try{const ctx=await access();assertOrigin(request);const raw=await request.text();if(raw.length>64000)throw new Error('request_too_large');return Response.json(await agendaAction(ctx,JSON.parse(raw)));}catch(e){return failure(e);}}

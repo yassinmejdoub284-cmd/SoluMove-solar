@@ -1,3 +1,4 @@
+import {checkAgenda} from './agenda-api-check.mjs';
 import {checkTechnical} from './technical-api-check.mjs';
 import {checkEnterprise} from './enterprise-api-check.mjs';
 import {spawn} from 'node:child_process';
@@ -22,7 +23,7 @@ try{
  await new Promise((resolve,reject)=>{const deadline=setTimeout(()=>reject(new Error('Next startup timed out: '+log.slice(-1200))),20000);server.stdout.on('data',()=>{if(log.includes('Ready')){clearTimeout(deadline);resolve()}});server.on('exit',code=>{clearTimeout(deadline);reject(new Error(`Next exited ${code}: ${log}`))})});
  let v=await request('/');assert.equal(v.r.status,307);assert.match(v.r.headers.get('location'),/sign-in/);
  v=await request('/sign-in');assert.equal(v.r.status,200);assert.match(v.data,/Activer votre espace/);
- for(const route of ['/api/workspace','/api/business','/api/files','/api/invitations','/api/technical','/api/steg-connectors']){v=await request(route,['/api/invitations','/api/steg-connectors'].includes(route)?{}:undefined,'',{'oai-authenticated-user-id':'owner','oai-authenticated-user-email':'owner@example.com'});assert.equal(v.r.status,401);}
+ for(const route of ['/api/workspace','/api/business','/api/files','/api/invitations','/api/technical','/api/steg-connectors','/api/agenda']){v=await request(route,['/api/invitations','/api/steg-connectors'].includes(route)?{}:undefined,'',{'oai-authenticated-user-id':'owner','oai-authenticated-user-email':'owner@example.com'});assert.equal(v.r.status,401);}
  v=await request('/api/auth/sign-up/email',{email:'owner@example.com',password,name:'Attacker'});assert.equal(v.r.status,404);
  v=await request('/api/activation',{email:'owner@example.com',key:'wrong',password});assert.equal(v.r.status,400);
  ok(await request('/api/activation',{email:'owner@example.com',key,password,name:'Test Owner'}));
@@ -53,6 +54,8 @@ try{
  v=await request('/api/invitations',{recordId:staffId},staffCookie);assert.equal(v.r.status,403);
  await checkEnterprise({request,workspace,save,ok,cookie,staffCookie,owner,prefix,role,staffId});
  await checkTechnical({request,workspace,save,ok,staffCookie,owner,prefix,folder});
+ const agendaFixture=await checkAgenda({request,workspace,save,ok,staffCookie,prefix,role,staffId});
+ if(process.env.SOLAR_UI_CHECK==='1'){const {checkAgendaUI}=await import('./agenda-ui-check.mjs');await checkAgendaUI({origin,cookie,staffCookie,folder,agendaFixture});}
  v=await request('/api/activation',{action:'invite',token,password});assert.equal(v.r.status,400);assert.equal(v.data.error,'invalid_invitation');
  v=await request('/api/activation',{key:'wrong'});assert.equal(v.r.status,429);
  v=await request('/api/auth/sign-out',{},cookie,{Origin:'https://evil.example'});assert.equal(v.r.status,403);

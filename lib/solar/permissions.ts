@@ -1,6 +1,6 @@
 import type {Entry} from './domain';
 export type PermissionRule={module:string;access:string;add?:string;edit?:string;delete?:string;scope?:string};
-export type PermissionContext={admin:boolean;email:string;actor:string;branches:string[];warehouses?:string[];rules:PermissionRule[]};
+export type PermissionContext={admin:boolean;email:string;actor:string;branches:string[];warehouses?:string[];employeeId?:string;rules:PermissionRule[]};
 export type PermissionAction='read'|'add'|'edit'|'delete'|boolean;
 export function allows(ctx:PermissionContext,module:string,action:PermissionAction=false){
  if(ctx.admin)return true;
@@ -16,7 +16,7 @@ export function inScope(ctx:PermissionContext,e:Pick<Entry,'id'|'kind'|'data'>){
  if(ctx.admin)return true;
  const matching=ctx.rules.filter(r=>r.module===e.kind);
  return matching.some(rule=>{
-  const scope=rule.scope??'legacy';if(scope==='all')return true;
+  const scope=rule.scope??'legacy';if(scope==='self')return !!ctx.employeeId&&(e.kind==='employees'?e.id===ctx.employeeId:e.data.employeeId===ctx.employeeId||(e.data.participants??[]).some((r:any)=>r.employeeId===ctx.employeeId));if(scope==='all')return true;
   if(globalCatalog.has(e.kind))return true;
   if(scope==='legacy'&&e.kind==='clients'&&!e.data.agencyId)return true;
   const agencyIds=[e.data.agencyId,e.data.destinationAgencyId,e.kind==='agencies'?e.id:undefined].filter(Boolean);

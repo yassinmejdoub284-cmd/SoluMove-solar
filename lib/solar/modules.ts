@@ -1,3 +1,4 @@
+import {extendAgenda} from './agenda-modules';
 import {extendTechnical} from './technical-modules';
 import {extendEnterprise} from './enterprise-modules';
 import {extendModules} from './advanced-modules';
@@ -57,6 +58,7 @@ M('vehicleCosts',w('Carburant & entretien','الوقود وصيانة السيا
 extendModules(modules);
 extendEnterprise(modules);
 extendTechnical(modules);
+extendAgenda(modules);
 for(const m of modules){if(m.key!=='agencies')m.fields.splice(1,0,f('agencyId','Agence','الوكالة','Branch','link',{target:'agencies'}));}
 export const byKey=Object.fromEntries(modules.map(m=>[m.key,m]));
-export const groups=[w('Commercial','المبيعات','Sales'),w('Opérations solaires','العمليات الشمسية','Solar operations'),w('Finance opérationnelle','المالية التشغيلية','Operational finance'),w('Achats & stock','الشراء والمخزون','Purchasing & inventory'),w('Ressources humaines','الموارد البشرية','Human resources'),w('Agences & parc','الوكالات والأسطول','Branches & fleet'),w('Comptabilité générale','المحاسبة العامة','General accounting'),w('Accès salariés','حسابات الموظفين','Staff access'),w('BI & prévisions','التحليل والتوقعات','BI & forecasts'),w('Fiscalité tunisienne','الجباية التونسية','Tunisian tax'),w('Communication','التواصل','Communication')];
+export const groups=[w('Commercial','المبيعات','Sales'),w('Opérations solaires','العمليات الشمسية','Solar operations'),w('Finance opérationnelle','المالية التشغيلية','Operational finance'),w('Achats & stock','الشراء والمخزون','Purchasing & inventory'),w('Ressources humaines','الموارد البشرية','Human resources'),w('Agences & parc','الوكالات والأسطول','Branches & fleet'),w('Comptabilité générale','المحاسبة العامة','General accounting'),w('Accès salariés','حسابات الموظفين','Staff access'),w('BI & prévisions','التحليل والتوقعات','BI & forecasts'),w('Fiscalité tunisienne','الجباية التونسية','Tunisian tax'),w('Communication','التواصل','Communication'),w('Agenda & tâches','الأجندة والمهام','Calendar & tasks')];

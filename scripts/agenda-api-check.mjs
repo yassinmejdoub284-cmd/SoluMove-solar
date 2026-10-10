@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+export async function checkAgenda({request,workspace,save,ok,staffCookie,prefix,role,staffId}){
+ const get=async id=>ok(await workspace()).records.find(r=>r.id===id);
+ const change=async(id,fields)=>{const e=await get(id);return ok(await workspace({action:'save',id,kind:e.kind,revision:e.revision,data:{...e.data,...fields}}));};
+ const act=async(action,id,extra={},auth)=>{const e=await get(id);return request('/api/agenda',{action,id,revision:e.revision,...extra},auth);};
+ const reject=async(p,code)=>{const v=await p;assert.ok(v.r.status>=400,JSON.stringify(v.data));if(code)assert.equal(v.data.error,code);return v;};
+ const A=await save('employees',{name:'Agenda A',position:'Technicien',email:'staff@example.com',agencyId:prefix+'demo-agency-1',status:'active'}),B=await save('employees',{name:'Agenda B',position:'Technicien',agencyId:prefix+'demo-agency-1',status:'active'});
+ await change(staffId,{employeeId:A});const roleRecord=await get(role);
+ const rules=[...roleRecord.data.rules,{module:'agenda',access:'read',scope:'self'},...['tasks','agendaEvents','planning'].map(module=>({module,access:'write',scope:'self'})),{module:'agencies',access:'read',scope:'agencies'},{module:'projects',access:'read',scope:'agencies'}];await change(role,{rules});
+ const create=async(kind,data,auth,requestId=crypto.randomUUID())=>request('/api/agenda',{action:'save',kind,data,requestId},auth);
+ const appointment={name:'Réunion photovoltaïque',employeeId:A,participants:[{employeeId:B}],date:'2026-10-10',endDate:'2026-10-10',time:'09:00',endTime:'10:00',repeat:'weekly',repeatInterval:1,repeatUntil:'2026-10-31',reminderMinutes:30,agencyId:prefix+'demo-agency-1',status:'confirmed'};
+ const meeting=ok(await create('agendaEvents',appointment)).id;
+ const other=ok(await create('agendaEvents',{name:'Confidential B',employeeId:B,date:'2026-10-10',endDate:'2026-10-10',time:'09:30',endTime:'10:30',status:'planned'})).id;
+ let d=ok(await request('/api/agenda?from=2026-10-01&to=2026-10-31'));assert.equal(d.scope,'general');assert.equal(d.items.filter(e=>e.recordId===meeting).length,4);assert.ok(d.conflicts.some(c=>c.employeeId===B));assert.ok(d.employees.some(e=>e.id===B));
+ d=ok(await request('/api/agenda?from=2026-10-01&to=2026-10-31&scope=general&employeeId='+B,undefined,staffCookie));assert.equal(d.scope,'mine');assert.equal(d.employeeId,A);assert.ok(d.items.some(e=>e.recordId===meeting));assert.ok(!d.items.some(e=>e.recordId===other));assert.ok(!d.records.some(e=>e.id===other));assert.deepEqual(d.employees.map(e=>e.id),[A]);assert.equal(d.conflicts.length,0);
+ const snapshot=ok(await request('/api/workspace',undefined,staffCookie));assert.equal(snapshot.access.employeeId,A);assert.ok(snapshot.records.some(e=>e.id===meeting));assert.ok(!snapshot.records.some(e=>e.id===other));
+ await reject(create('tasks',{name:'Other task',employeeId:B,dueDate:'2026-10-10',status:'todo'},staffCookie),'forbidden_assignment');
+ await reject(request('/api/workspace',{action:'save',kind:'tasks',data:{name:'Bypass',employeeId:B,dueDate:'2026-10-10',status:'todo'}},staffCookie),'forbidden_assignment');
+ await reject(create('agendaEvents',{...appointment,time:'24:00'}),'invalid_agenda_time');
+ await reject(request('/api/agenda?from=2026-01-01&to=2026-12-31'),'invalid_agenda_period');
+ const task={name:'Préparer matériel',employeeId:A,dueDate:'2026-10-12',date:'2026-10-10',time:'09:30',hours:1,checklist:[{label:'Contrôler câbles',done:'no'}],status:'todo',priority:'high'};
+ const requestId=crypto.randomUUID(),tid=ok(await create('tasks',task,staffCookie,requestId)).id;ok(await create('tasks',task,staffCookie,requestId));assert.equal(ok(await workspace()).records.filter(e=>e.id===tid).length,1);
+ d=ok(await request('/api/agenda?from=2026-10-01&to=2026-10-31',undefined,staffCookie));assert.ok(d.conflicts.some(c=>c.employeeId===A));assert.ok(d.tasks.some(t=>t.id===tid));
+ const notifications=ok(await request('/api/workspace',undefined,staffCookie)).records.filter(e=>e.kind==='notifications'&&e.data.sourceId===tid);assert.equal(notifications.length,1);assert.equal(notifications[0].data.recipientEmail,'staff@example.com');
+ await reject(act('completeTask',tid,{},staffCookie),'task_checklist_incomplete');await change(tid,{checklist:[{label:'Contrôler câbles',done:'yes'}]});ok(await act('completeTask',tid,{},staffCookie));assert.ok((await get(tid)).data.completedAt);
+ const x=ok(await create('tasks',{name:'Dependency A',employeeId:A,dueDate:'2026-10-12',status:'todo'})).id,y=ok(await create('tasks',{name:'Dependency B',employeeId:A,dueDate:'2026-10-12',dependencies:[{taskId:x}],status:'todo'})).id;
+ await reject(act('completeTask',y,{},staffCookie),'task_dependency_incomplete');const prior=await get(x);await reject(request('/api/agenda',{action:'save',kind:'tasks',id:x,revision:prior.revision,data:{...prior.data,dependencies:[{taskId:y}]}}),'task_dependency_cycle');ok(await act('completeTask',x,{},staffCookie));ok(await act('completeTask',y,{},staffCookie));
+ const stale=await get(meeting);ok(await act('cancelOccurrence',meeting,{date:'2026-10-17'}));d=ok(await request('/api/agenda?from=2026-10-01&to=2026-10-31'));assert.equal(d.items.filter(e=>e.recordId===meeting).length,3);assert.ok(!d.items.some(e=>e.recordId===meeting&&e.date==='2026-10-17'));
+ await reject(request('/api/agenda',{action:'save',kind:'agendaEvents',id:meeting,revision:stale.revision,data:appointment}),'conflict');
+ const exported=await request('/api/agenda?from=2026-10-01&to=2026-10-31&format=ics',undefined,staffCookie);assert.equal(exported.r.status,200);assert.match(exported.data,/BEGIN:VCALENDAR/);assert.match(exported.data,/TRIGGER:-PT30M/);assert.ok(!exported.data.includes('Confidential B'));
+ await change(role,{rules:rules.map(r=>['tasks','planning','agendaEvents'].includes(r.module)?{...r,access:'read',add:'deny',edit:'deny',delete:'allow'}:r)});
+ await reject(create('tasks',task,staffCookie),'forbidden');await reject(act('completeTask',tid,{},staffCookie),'forbidden');ok(await act('archive',x,{},staffCookie));assert.equal(await get(x),undefined);
+ await change(role,{rules});
+ console.log('PASS: calendar owner/staff isolation, participant self scope, guarded generic writes, recurrence exceptions, conflicts, checklist/dependency cycles, notifications, idempotency, stale edits, ICS privacy and independent CRUD permissions.');
+ return {A,B,meeting,tid};
+}
