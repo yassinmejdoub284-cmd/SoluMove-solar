@@ -1,0 +1,3 @@
+import {access,assertOrigin,failure} from '@/lib/solar/server';
+import {saveConnector,checkConnector} from '@/lib/solar/steg-connector-server';
+export async function POST(request:Request){try{assertOrigin(request);const ctx=await access(),raw=await request.text();if(raw.length>12000)throw new Error('request_too_large');const b=JSON.parse(raw);if(!['save','start','resume'].includes(b.action))throw new Error('invalid_action');const result=b.action==='save'?await saveConnector(ctx,b):await checkConnector(ctx,b);return Response.json(result,{headers:{'Cache-Control':'private, no-store'}});}catch(e){return failure(e);}}

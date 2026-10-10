@@ -1,0 +1,65 @@
+import assert from 'node:assert/strict';
+import {createClient} from '@libsql/client';
+export async function checkTechnical({request,workspace,save,ok,staffCookie,owner,prefix,folder}){
+ const sql=createClient({url:`file:${folder}/test.db`});
+ const get=async id=>ok(await workspace()).records.find(r=>r.id===id);
+ const change=async(id,fields)=>{const e=await get(id);return ok(await workspace({action:'save',id,kind:e.kind,revision:e.revision,data:{...e.data,...fields}}));};
+ const act=async(action,id,extra={})=>{const e=await get(id);return request('/api/technical',{action,id,revision:e.revision,...extra});};
+ const reject=async promise=>{const {r,data}=await promise;assert.ok(r.status>=400,JSON.stringify(data));return data;};
+ // Evidence metadata fixtures exercise relational controls, not real signed documents or Blob uploads.
+ const file=async(parent,name='TEST fixture.pdf')=>{const id=crypto.randomUUID();await sql.execute({sql:'INSERT INTO files(id,owner,record_id,filename,content_type,size,created_at) VALUES(?,?,?,?,?,?,?)',args:[id,owner,parent,name,'application/pdf',100,new Date().toISOString()]});return id;};
+ try{
+ const agency=prefix+'demo-agency-1',wh=prefix+'demo-warehouse-1',to=prefix+'demo-warehouse-2',date='2026-10-09';
+ const client=await save('clients',{name:'Technical fixture Tunis',taxId:'0001238L',phone:'20000000',address:'Tunis',agencyId:agency,desiredKwc:6,status:'active'});
+ const site=await save('sites',{name:'Site Tunis',clientId:client,address:'Tunis',gps:'36.8065,10.1815',stegRef:'123456789',district:'Tunis',connection:'threePhase',subscribedKva:10,gridKv:.4,agencyId:agency,status:'active'});
+ const project=await save('projects',{name:'PV fixture 6 kWc',clientId:client,siteId:site,capacity:6,inverterKva:6,legalRegime:'onSiteSelfConsumption',agencyId:agency,status:'study'});
+ await reject(act('createDossier',project));
+ await change(site,{stegConsentFileId:await file(site,'TEST consent.pdf'),stegConsentUntil:'2026-12-31'});
+ const connector=ok(await request('/api/steg-connectors',{action:'save',clientId:client,siteId:site,name:'Test connector',login:'fixture-login',password:'fixture-secret-not-real',status:'active'})).id;
+ await reject(request('/api/steg-connectors',{action:'start',projectId:project},staffCookie));
+ const challenge=ok(await request('/api/steg-connectors',{action:'start',projectId:project}));assert.equal(challenge.status,'captcha_required');assert.equal((ok(await workspace()).records.filter(r=>r.kind==='stegChecks'&&r.data.projectId===project)).length,0);
+ const vault=await sql.execute({sql:'SELECT ciphertext FROM solar_connector_secrets WHERE owner=? AND connector_id=?',args:[owner,connector]});assert.equal(vault.rows.length,1);assert.ok(!vault.rows[0].ciphertext.includes('fixture-secret-not-real'));
+ const publicState=JSON.stringify(ok(await workspace()));assert.ok(!publicState.includes('fixture-secret-not-real'));assert.ok(!publicState.includes('fixture-login'));
+ const checked=ok(await request('/api/steg-connectors',{action:'resume',projectId:project,sessionId:challenge.sessionId,answer:'1234'}));assert.equal(checked.status,'verified');assert.equal((await get(checked.id)).data.balance,0);
+ await reject(request('/api/steg-connectors',{action:'resume',projectId:project,sessionId:challenge.sessionId,answer:'1234'}));
+ const stale=ok(await request('/api/steg-connectors',{action:'start',projectId:project}));await change(site,{notes:'Revision changed'});await reject(request('/api/steg-connectors',{action:'resume',projectId:project,sessionId:stale.sessionId,answer:'1234'}));await reject(act('createDossier',project));
+ const fresh=ok(await request('/api/steg-connectors',{action:'start',projectId:project}));ok(await request('/api/steg-connectors',{action:'resume',projectId:project,sessionId:fresh.sessionId,answer:'1234'}));
+ const dossier=ok(await act('createDossier',project)).id;assert.equal((await get(dossier)).data.voltage,'BT');assert.equal((await get(dossier)).data.status,'incomplete');
+ const pack=await request(`/api/technical?id=${dossier}&format=dossier`);assert.equal(pack.r.status,200,JSON.stringify(pack.data));assert.equal((pack.data.match(/class="page"/g)??[]).length,8);assert.ok(pack.data.includes('123456789')&&pack.data.includes('Technical fixture Tunis'));
+ const incomplete=await get(dossier);await reject(workspace({action:'save',id:dossier,kind:'dossiers',revision:incomplete.revision,data:{...incomplete.data,status:'ready'}}));
+ const cable=await save('products',{name:'Cable fixture 6mm2',sku:'TECH-CABLE',category:'cable',unit:'meter',tracking:'quantityOnly',purchasePrice:1000,salePrice:1500,status:'active'});
+ const stock=await save('movements',{name:'Fixture cable opening',productId:cable,warehouse:wh,direction:'stockIn',quantity:1000,date,reason:'Technical test'});assert.ok(stock);
+ const study=await save('studies',{name:'Imported simulation fixture',clientId:client,projectId:project,capacity:6,assumptions:'TEST weather and losses',simulationTool:'PVsyst',weatherSource:'TEST dataset 2014–2024',simulationFileId:await file(project,'TEST simulation report.pdf'),simulationMonthly:Array.from({length:12},(_,i)=>({month:i+1,energy:1000,irradiation:200})),status:'draft'});assert.equal((await get(study)).data.annualEnergy,12000);assert.ok(Math.abs((await get(study)).data.performanceRatio-5/6)<1e-9);
+ const plan=ok(await act('createPlan',dossier)).id,survey=await file(plan,'TEST measured survey.pdf');
+ const route=(name,kind,path,section,conductors,current,voltage,ampacity)=>({name,kind,productId:cable,path,section,conductors,current,voltage,ampacity,dropLimit:2,resistivity:.0225,waste:5});
+ await change(plan,{capacity:6,inverterKva:6,roofWidth:20,roofLength:20,edge:.5,moduleWidth:1.1,moduleLength:2.2,moduleW:500,columns:6,gap:.02,rowGap:.8,tilt:20,anchorSpacing:1,support:'aluminum',voc:50,vmp:40,isc:13,imp:12,betaVoc:-.28,betaVmp:-.32,alphaIsc:.05,tmin:-10,tmax:85,inverterKw:6,udcMax:1000,mpptMin:120,mpptMax:850,mpptCount:2,stringsPerMppt:2,mpptCurrent:30,mpptIsc:40,surveyFileId:survey,routes:[route('DC','dc','0,0,0\n3,4,0\n3,4,12',6,2,13,500,45),route('AC','ac3','0,0,0\n20,0,0',16,5,20,400,60),route('Terre','earth','0,0,0\n20,0,0',6,1,0,230,45)]});
+ await reject(act('generatePlan',plan));ok(await act('generateStudyPlan',plan));assert.equal((await get(plan)).data.status,'draft');
+ let drawing=await request(`/api/technical?id=${plan}&format=dxf`);assert.equal(drawing.r.status,200);assert.match(drawing.data,/AC1009/);
+ const diagram=await request(`/api/technical?id=${plan}&format=unifilar`);assert.equal(diagram.r.status,200);assert.match(diagram.data,/MPPT/);
+ await change(site,{notes:'Second site revision after dossier'});
+ const oldDossier=await get(dossier);await reject(workspace({action:'save',id:dossier,kind:'dossiers',revision:oldDossier.revision,data:{...oldDossier.data,status:'ready'}}));
+ const refreshChallenge=ok(await request('/api/steg-connectors',{action:'start',projectId:project}));const refreshed=ok(await request('/api/steg-connectors',{action:'resume',projectId:project,sessionId:refreshChallenge.sessionId,answer:'1234'}));
+ assert.equal(ok(await act('createDossier',project)).id,dossier);assert.equal((await get(dossier)).data.checkId,refreshed.id);
+ const titles=(await get(dossier)).data.checklist,annexes=[];for(const title of titles)annexes.push({title,fileId:await file(dossier,'TEST '+title+'.pdf')});
+ await change(dossier,{annexes,installerQualification:'TEST ANME qualification',legalReviewer:'Test legal reviewer',legalReviewFileId:await file(dossier,'TEST legal review.pdf'),status:'ready'});
+ ok(await act('approveSteg',dossier,{fileId:await file(dossier,'TEST decision.pdf'),reference:'TEST-NOT-REAL-DECISION',date}));assert.equal((await get(dossier)).data.status,'approved');assert.equal((await get(plan)).data.status,'generated');assert.equal((await get(plan)).data.dossierRevision,(await get(dossier)).revision);
+ ok(await act('reviewPlan',plan,{reviewer:'Test engineer',fileId:await file(plan,'TEST signed engineering note.pdf')}));ok(await act('reservePlan',plan,{warehouse:wh}));assert.ok(ok(await workspace()).records.some(r=>r.kind==='reservations'&&r.data.projectId===project));
+ const drum=await save('cableDrums',{name:'Fixture drum',productId:cable,warehouse:wh,form:'drum',lot:'TECH-600',initialLength:600,date,status:'draft'});ok(await act('activateDrum',drum));
+ const before=ok(await workspace()).stock;await reject(workspace({action:'save',kind:'movements',data:{name:'Forbidden untracked issue',productId:cable,warehouse:wh,direction:'stockOut',quantity:500,date,reason:'Must reject'}}));assert.deepEqual(ok(await workspace()).stock,before);
+ const cut=await save('cableCuts',{name:'Fixture cut',projectId:project,drumId:drum,length:100,wasteLength:2,date,status:'draft'});ok(await act('cutCable',cut));assert.equal((await get(drum)).data.remainingLength,498);await reject(act('cutCable',cut));
+ const returned=await save('cableReturns',{name:'Fixture return',cutId:cut,warehouse:wh,length:30,date,status:'draft'}),offcut=ok(await act('returnCable',returned)).id;assert.equal((await get(offcut)).data.remainingLength,30);assert.equal((await get(drum)).data.remainingLength,498);
+ ok(await act('transferDrum',drum,{warehouse:to}));assert.equal((await get(drum)).data.warehouse,to);
+ const excessive=await save('cableCuts',{name:'Excess cut',projectId:project,drumId:drum,length:499,wasteLength:0,date,status:'draft'});await reject(act('cutCable',excessive));assert.equal((await get(drum)).data.remainingLength,498);
+ const supplier=await save('suppliers',{name:'Supplier withholding fixture',taxId:'0001238L',address:'Tunis',phone:'20000000',email:'tax@example.com',rsEnabled:'yes',rsRate:1.5,rsVatRate:0,rsCode:'RS7_000001',rsCategory:'PM',rsResident:'1',rsPolicySource:'TEST approved tax policy',agencyId:agency,status:'active'});
+ const invoice=await save('supplierInvoices',{name:'Supplier invoice fixture',supplierId:supplier,reference:'TECH-INV-1',date,dueDate:'2026-11-01',stamp:1000,items:[{description:'Material',quantity:1,price:1000000,tax:19}],agencyId:agency,status:'issued'});assert.equal((await get(invoice)).data.total,1191000);
+ const pay={name:'Partial supplier settlement',direction:'outgoing',supplierId:supplier,supplierInvoiceId:invoice,date,amount:595500,method:'transfer',status:'cleared'},requestId=crypto.randomUUID();
+ const payment=ok(await workspace({action:'save',kind:'payments',data:pay,requestId})).id;ok(await workspace({action:'save',kind:'payments',data:pay,requestId}));let p=await get(payment);assert.equal(p.data.withheld,8925);assert.equal(p.data.netAmount,586575);assert.equal((await get(p.data.withholdingId)).data.status,'validated');assert.equal((await get(invoice)).data.remainingGross,595500);
+ const second=await save('payments',{...pay,name:'Second partial supplier settlement'});assert.equal((await get(invoice)).data.remainingGross,0);await reject(workspace({action:'save',kind:'payments',data:{...pay,amount:1}}));
+ const cfg=ok(await workspace()).records.find(r=>r.kind==='accountingSettings'),account=ok(await workspace()).records.find(r=>r.kind==='accounts'&&String(r.data.code).startsWith('442'));assert.ok(cfg&&account);await change(cfg.id,{supplierWithholding:account.id});
+ const inv=await get(invoice);ok(await request('/api/business',{action:'accountSource',id:invoice,revision:inv.revision}));p=await get(payment);ok(await request('/api/business',{action:'accountSource',id:payment,revision:p.revision}));
+ const xml=await request('/api/enterprise?tej=1&period=2026-10&act=0');assert.equal(xml.r.status,200,JSON.stringify(xml.data));assert.match(xml.r.headers.get('x-solar-validation'),/XSD-TEJ/);
+ p=await get(payment);ok(await request('/api/workspace',{action:'cancelPayment',id:payment,revision:p.revision,reason:'Test cancellation'}));assert.equal((await get(invoice)).data.remainingGross,595500);assert.equal((await get(second)).data.status,'cleared');assert.ok(ok(await workspace()).records.some(r=>r.kind==='withholdings'&&r.data.operation==='cancel'&&r.data.paymentId===payment));
+ await reject(request(`/api/technical?id=${dossier}&format=dossier`,undefined,staffCookie));
+ console.log('PASS: encrypted connector vault, human CAPTCHA gating/replay/stale-site rejection, contextual BT dossier prefill/readiness, approval-driven CAD/unifilar, engineer review/reservation, assigned cable stock/cut/offcut/transfer controls, partial supplier withholding/TEJ XSD/idempotency/overpayment/cancellation/journals and staff isolation. Gateway and document evidence are test fixtures.');
+ }finally{sql.close();}
+}

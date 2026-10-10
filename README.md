@@ -6,6 +6,10 @@ ERP photovoltaïque tunisien avec gestion commerciale, stock, RH et comptabilit�
 
 BI multi-agences, commandes clients/inter-dépôts, transfert de dossiers, bons de sortie, avoirs imputables, QR unitaires et capture scanner dans les documents, garde des clés, entretien, rapprochement TVA, retenues TEJ, prévisions de trésorerie, PV, permissions CRUD par périmètre, notifications et chat privé avec pièces jointes. Modes clair/sombre. Guide détaillé et limites fiscales : [docs/ENTERPRISE_0.4.md](docs/ENTERPRISE_0.4.md). Les nouveaux libellés sont principalement en français.
 
+## Parcours technique STEG
+
+Fiches reliées au client, vérification STEG avec coffre chiffré et CAPTCHA résolu par le client, préparation de dossiers BT/MT/HT, pièces et cadre juridique, import de résultats de simulation, avant-projet implantation/chaînes/câblage DXF et unifilaire, décision STEG jointe, validation ingénieur, suivi des bobines/coupes/chutes et retenue automatique sur paiement fournisseur. [Parcours, références et limites](docs/TECHNIQUE_STEG.md). La consultation STEG nécessite la [passerelle navigateur à configurer et valider](services/steg-bridge/README.md).
+
 ## Build Vercel
 
 Le fichier `vercel.json` choisit Next.js et `pnpm run build:vercel`, qui génère les manifestes attendus dans `.next`. Le build Worker/Vinext reste disponible avec `pnpm build` hors Vercel. `pnpm build` sur Vercel sélectionne également Next.js.

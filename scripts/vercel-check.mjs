@@ -1,3 +1,4 @@
+import {checkTechnical} from './technical-api-check.mjs';
 import {checkEnterprise} from './enterprise-api-check.mjs';
 import {spawn} from 'node:child_process';
 import {mkdtemp,rm} from 'node:fs/promises';
@@ -7,7 +8,7 @@ import {randomBytes} from 'node:crypto';
 const folder=await mkdtemp(path.resolve('.sites-runtime/vercel-test-'));
 const origin='http://127.0.0.1:4329',key=randomBytes(32).toString('hex'),password=randomBytes(24).toString('hex');
 const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','4329'],{
- env:{...process.env,TURSO_DATABASE_URL:`file:${folder}/test.db`,TURSO_AUTH_TOKEN:'',BETTER_AUTH_SECRET:key,BETTER_AUTH_URL:origin,SOLAR_OWNER_EMAIL:'owner@example.com',NEXT_TELEMETRY_DISABLED:'1'},stdio:['ignore','pipe','pipe']});
+ env:{...process.env,TURSO_DATABASE_URL:`file:${folder}/test.db`,TURSO_AUTH_TOKEN:'',BETTER_AUTH_SECRET:key,BETTER_AUTH_URL:origin,SOLAR_OWNER_EMAIL:'owner@example.com',NEXT_TELEMETRY_DISABLED:'1',STEG_GATEWAY_URL:'https://steg-test.example/account-status',STEG_GATEWAY_HOST:'steg-test.example',STEG_GATEWAY_TOKEN:key,NODE_OPTIONS:((process.env.NODE_OPTIONS??'')+' --require '+path.resolve('scripts/steg-test-provider.cjs')).trim()},stdio:['ignore','pipe','pipe']});
 let log='';server.stdout.on('data',c=>{log+=c});server.stderr.on('data',c=>{log+=c});
 let cookie='';
 async function request(route,body,auth=cookie,extra={}){
@@ -21,7 +22,7 @@ try{
  await new Promise((resolve,reject)=>{const deadline=setTimeout(()=>reject(new Error('Next startup timed out: '+log.slice(-1200))),20000);server.stdout.on('data',()=>{if(log.includes('Ready')){clearTimeout(deadline);resolve()}});server.on('exit',code=>{clearTimeout(deadline);reject(new Error(`Next exited ${code}: ${log}`))})});
  let v=await request('/');assert.equal(v.r.status,307);assert.match(v.r.headers.get('location'),/sign-in/);
  v=await request('/sign-in');assert.equal(v.r.status,200);assert.match(v.data,/Activer votre espace/);
- for(const route of ['/api/workspace','/api/business','/api/files','/api/invitations']){v=await request(route,route==='/api/invitations'?{}:undefined,'',{'oai-authenticated-user-id':'owner','oai-authenticated-user-email':'owner@example.com'});assert.equal(v.r.status,401);}
+ for(const route of ['/api/workspace','/api/business','/api/files','/api/invitations','/api/technical','/api/steg-connectors']){v=await request(route,['/api/invitations','/api/steg-connectors'].includes(route)?{}:undefined,'',{'oai-authenticated-user-id':'owner','oai-authenticated-user-email':'owner@example.com'});assert.equal(v.r.status,401);}
  v=await request('/api/auth/sign-up/email',{email:'owner@example.com',password,name:'Attacker'});assert.equal(v.r.status,404);
  v=await request('/api/activation',{email:'owner@example.com',key:'wrong',password});assert.equal(v.r.status,400);
  ok(await request('/api/activation',{email:'owner@example.com',key,password,name:'Test Owner'}));
@@ -51,6 +52,7 @@ try{
  v=await request('/api/workspace',{action:'company',data:{name:'Forbidden'}},staffCookie);assert.equal(v.r.status,403);
  v=await request('/api/invitations',{recordId:staffId},staffCookie);assert.equal(v.r.status,403);
  await checkEnterprise({request,workspace,save,ok,cookie,staffCookie,owner,prefix,role,staffId});
+ await checkTechnical({request,workspace,save,ok,staffCookie,owner,prefix,folder});
  v=await request('/api/activation',{action:'invite',token,password});assert.equal(v.r.status,400);assert.equal(v.data.error,'invalid_invitation');
  v=await request('/api/activation',{key:'wrong'});assert.equal(v.r.status,429);
  v=await request('/api/auth/sign-out',{},cookie,{Origin:'https://evil.example'});assert.equal(v.r.status,403);

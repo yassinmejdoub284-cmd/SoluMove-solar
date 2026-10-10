@@ -5,7 +5,8 @@ export function retentionAmounts(operations:any[]){
  let ht=0,vat=0,gross=0,ir=0,vatRS=0;
  const rows=operations.map(o=>{
   if(!Number.isSafeInteger(o.base)||o.base<0||![o.rate??0,o.vatRate??0,o.vatWithholdingRate??0].every(r=>Number.isFinite(r)&&r>=0&&r<=100&&Math.abs(Math.round(r*100)-r*100)<1e-7))throw new Error('invalid_tax');
-  const tax=Math.round(o.base*(o.vatRate??0)/100),ttc=o.base+tax,withheld=Math.round(ttc*(o.rate??0)/100),retainedVat=Math.round(tax*(o.vatWithholdingRate??0)/100),net=ttc-withheld-retainedVat;
+  const calculatedTax=Math.round(o.base*(o.vatRate??0)/100);if(o.allocatedTax!==undefined&&(!Number.isSafeInteger(o.allocatedTax)||o.allocatedTax<0||Math.abs(o.allocatedTax-calculatedTax)>2))throw new Error('invalid_allocated_tax');
+   const tax=o.allocatedTax??calculatedTax,ttc=o.base+tax,withheld=Math.round(ttc*(o.rate??0)/100),retainedVat=Math.round(tax*(o.vatWithholdingRate??0)/100),net=ttc-withheld-retainedVat;
   if(net<0||!Number.isSafeInteger(ttc))throw new Error('invalid_tax');
   ht+=o.base;vat+=tax;gross+=ttc;ir+=withheld;vatRS+=retainedVat;
   return {...o,tax,ttc,withheld,retainedVat,net};
@@ -28,8 +29,9 @@ export function dashboardReport(data:WorkspaceData,filters:{from:string;to:strin
  const sales=invoices.reduce((n,r)=>n+sign(r)*(r.data.subtotal-(r.data.discount??0)),0);
  const outputVat=invoices.reduce((n,r)=>n+sign(r)*(r.data.tax??0),0);
  const orderMap=new Map(all.filter(r=>r.kind==='orders').map(r=>[r.id,r]));
- const purchases=scoped.filter(r=>r.kind==='receipts'&&r.data.status==='posted'&&inPeriod(r));
- let purchaseHt=0,inputVat=0;for(const r of purchases)for(const item of r.data.items){const source=orderMap.get(r.data.orderId)?.data.items?.find((i:any)=>i.productId===item.productId);const ht=Math.round(item.quantity*(source?.price??0));purchaseHt+=ht;inputVat+=Math.round(ht*(source?.tax??0)/100);}
+ const invoicedOrders=new Set(scoped.filter(r=>r.kind==='supplierInvoices'&&r.data.status==='issued').map(r=>r.data.orderId).filter(Boolean));
+ const purchases=scoped.filter(r=>inPeriod(r)&&(r.kind==='supplierInvoices'&&r.data.status==='issued'||r.kind==='receipts'&&r.data.status==='posted'&&!invoicedOrders.has(r.data.orderId)));
+ let purchaseHt=0,inputVat=0;for(const r of purchases){if(r.kind==='supplierInvoices'){purchaseHt+=r.data.subtotal;inputVat+=r.data.tax;continue;}for(const item of r.data.items){const source=orderMap.get(r.data.orderId)?.data.items?.find((i:any)=>i.productId===item.productId);const ht=Math.round(item.quantity*(source?.price??0));purchaseHt+=ht;inputVat+=Math.round(ht*(source?.tax??0)/100);}}
  const retentions=effectiveWithholdings(scoped);
  const paid=(id:string)=>data.allocations.filter(a=>a.installment_id===id).reduce((n,a)=>n+a.amount,0);
  const dues=scoped.filter(r=>r.kind==='installments'&&r.data.status!=='restructured').map(r=>({...r,remaining:Math.max(0,r.data.amount-paid(r.id))})).filter(r=>r.remaining>0);

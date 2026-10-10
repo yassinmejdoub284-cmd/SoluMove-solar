@@ -1,0 +1,7 @@
+import assert from 'node:assert/strict';
+import {millimes,allowedPortalRequest,extractBalance} from './policy.mjs';
+assert.equal(millimes('1 235,456 DT'),1235456);assert.equal(millimes('0.000 TND'),0);assert.throws(()=>millimes('Total 0 factures'));assert.throws(()=>millimes('-1 DT'));
+const config={hosts:['espace.steg.com.tn'],captchaHosts:['www.google.com'],loginAction:'https://espace.steg.com.tn/fr/espace/login.php'};
+assert.equal(allowedPortalRequest(config.loginAction,'POST',config),true);assert.equal(allowedPortalRequest('https://espace.steg.com.tn/payer','POST',config),false);assert.equal(allowedPortalRequest('https://127.0.0.1/secrets','GET',config),false);assert.equal(allowedPortalRequest('https://espace.steg.com.tn/change-password','POST',config),false);
+assert.equal(extractBalance({referenceText:'123456789',balanceText:'0,000 DT',completeText:'Solde total du compte',reference:'123456789',completePattern:'^Solde total du compte$'}).status,'paid');assert.throws(()=>extractBalance({referenceText:'987654321',balanceText:'0',completeText:'Solde total du compte',reference:'123456789',completePattern:'.+'}));assert.throws(()=>extractBalance({referenceText:'123456789',balanceText:'0',completeText:'Dernière facture seulement',reference:'123456789',completePattern:'^Solde total du compte$'}));
+console.log('PASS: bridge read-only request policy, exact account match and explicit complete account balance parsing.');

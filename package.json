@@ -13,7 +13,7 @@
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "check": "node node_modules/typescript/bin/tsc --noEmit && node --import ./scripts/test-loader.mjs scripts/domain-check.ts && node --import ./scripts/test-loader.mjs scripts/business-domain-check.ts && node --import ./scripts/test-loader.mjs scripts/enterprise-domain-check.ts",
+    "check": "node node_modules/typescript/bin/tsc --noEmit && node --import ./scripts/test-loader.mjs scripts/domain-check.ts && node --import ./scripts/test-loader.mjs scripts/business-domain-check.ts && node --import ./scripts/test-loader.mjs scripts/enterprise-domain-check.ts && node --import ./scripts/test-loader.mjs scripts/technical-domain-check.ts && node services/steg-bridge/policy-check.mjs",
     "test:worker": "node scripts/api-check.mjs && node scripts/business-check.mjs",
     "test:vercel": "node scripts/vercel-check.mjs",
     "test:tunisia": "node --import ./scripts/test-loader.mjs scripts/tunisia-demo-check.ts && node --import ./scripts/test-loader.mjs scripts/workspace-pagination-check.ts && node scripts/tunisia-demo-api-check.mjs",
